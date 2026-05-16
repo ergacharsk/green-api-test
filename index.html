@@ -2,8 +2,7 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GREEN-API Test Task</title>
+    <title>GREEN-API Telegram Test</title>
     <style>
         body { font-family: sans-serif; display: flex; padding: 20px; gap: 20px; }
         .controls { width: 40%; display: flex; flex-direction: column; gap: 15px; }
@@ -13,30 +12,29 @@
         .group { border: 1px solid #ccc; padding: 10px; border-radius: 5px; }
         label { display: block; margin-bottom: 5px; font-weight: bold; }
         button { cursor: pointer; background-color: #f0f0f0; border: 1px solid #777; margin-top: 5px; }
-        button:hover { background-color: #e0e0e0; }
     </style>
 </head>
 <body>
 
     <div class="controls">
         <div class="group">
-            <input type="text" id="idInstance" placeholder="idInstance" required>
-            <input type="text" id="apiTokenInstance" placeholder="ApiTokenInstance" style="margin-top:5px;" required>
+            <input type="text" id="idInstance" placeholder="idInstance" style="margin-top:5px;">
+            <input type="text" id="apiTokenInstance" placeholder="ApiTokenInstance" style="margin-top:5px;">
         </div>
 
-        <button onclick="getSettings()">getSettings</button>
-        <button onclick="getStateInstance()">getStateInstance</button>
+        <button onclick="callGetMethod('getSettings')">getSettings</button>
+        <button onclick="callGetMethod('getStateInstance')">getStateInstance</button>
 
         <div class="group">
-            <label>Отправка сообщения</label>
-            <input type="text" id="phoneMessage" placeholder="77771234567">
+            <label>Отправка сообщения (Telegram)</label>
+            <input type="text" id="chatIdMessage" placeholder="77771234567 (без @t.me)">
             <textarea id="textMessage" style="height: 60px; margin-top:5px;" placeholder="Hello World!"></textarea>
             <button onclick="sendMessage()">sendMessage</button>
         </div>
 
         <div class="group">
             <label>Отправка файла по URL</label>
-            <input type="text" id="phoneFile" placeholder="77771234567">
+            <input type="text" id="chatIdFile" placeholder="77771234567">
             <input type="text" id="fileUrl" style="margin-top:5px;" placeholder="https://mysite.com/img.png">
             <button onclick="sendFileByUrl()">sendFileByUrl</button>
         </div>
@@ -48,95 +46,67 @@
     </div>
 
     <script>
-        // Функция для вывода результата в поле "Ответ"
+        const baseUrl = "https://4100.api.green-api.com";
+
         function logResponse(data) {
-            const logField = document.getElementById('responseLog');
-            logField.value = JSON.stringify(data, null, 4);
+            document.getElementById('responseLog').value = JSON.stringify(data, null, 4);
         }
 
-        // Вспомогательная функция для получения настроек доступа
-        function getCredentials() {
-            // .trim() уберет случайные пробелы в начале или конце
+        function getAuth() {
             return {
                 id: document.getElementById('idInstance').value.trim(),
                 token: document.getElementById('apiTokenInstance').value.trim()
             };
         }
 
-        async function getSettings() {
-            const { id, token } = getCredentials();
-            // Проверь, чтобы ID и токен не были пустыми
-            if (!id || !token) {
-                logResponse({ error: "Введите idInstance и apiTokenInstance" });
-                return;
-            }
-            
-            const url = `https://4100.api.green-api.com$4100621940/getSettings/$3905565c604a459bb4c5c0e3cee4c6cab3f0ec34e4904c61b3`;
-            
-            try {
-                const response = await fetch(url, { method: 'GET' });
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Ошибка сервера: ${response.status} - ${errorText}`);
-                }
-                const result = await response.json();
-                logResponse(result);
-            } catch (error) { 
-                logResponse({ 
-                    error: "Failed to fetch", 
-                    message: "Возможно, блокировка CORS или неверный ID/Token",
-                    details: error.message 
-                }); 
-            }
-        }
-
-        // 2. Метод getStateInstance [cite: 8]
-        async function getStateInstance() {
-            const { id, token } = getCredentials();
-            const url = `https://4100.api.green-api.com$4100621940/getStateInstance/$3905565c604a459bb4c5c0e3cee4c6cab3f0ec34e4904c61b3`;
+        async function callGetMethod(method) {
+            const { id, token } = getAuth();
+            const url = `${baseUrl}/waInstance${id}/${method}/${token}`;
             try {
                 const response = await fetch(url);
                 const result = await response.json();
                 logResponse(result);
-            } catch (error) { logResponse({ error: error.message }); }
+            } catch (e) { logResponse({ error: e.message }); }
         }
 
-        // 3. Метод sendMessage [cite: 9]
         async function sendMessage() {
-            const { id, token } = getCredentials();
-            const chatId = `${document.getElementById('phoneMessage').value}@c.us`;
+            const { id, token } = getAuth();
+            const phone = document.getElementById('chatIdMessage').value.trim();
+            // Формируем chatId правильно: проверяем, нет ли уже @t.me
+            const chatId = phone.includes('@t.me') ? phone : `${phone}@t.me`;
             const message = document.getElementById('textMessage').value;
-            const url = `https://4100.api.green-api.com$4100621940/sendMessage/$3905565c604a459bb4c5c0e3cee4c6cab3f0ec34e4904c61b3`;
+            const url = `${baseUrl}/waInstance${id}/sendMessage/${token}`;
 
             try {
                 const response = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json' // ОБЯЗАТЕЛЬНО для работы POST запросов
+                    },
                     body: JSON.stringify({ chatId, message })
                 });
-                const result = await response.json();
-                logResponse(result);
-            } catch (error) { logResponse({ error: error.message }); }
+                logResponse(await response.json());
+            } catch (e) { logResponse({ error: e.message }); }
         }
 
-        // 4. Метод sendFileByUrl [cite: 10]
         async function sendFileByUrl() {
-            const { id, token } = getCredentials();
-            const chatId = `${document.getElementById('phoneFile').value}@c.us`;
-            const urlFile = document.getElementById('fileUrl').value;
-            // Извлекаем имя файла из URL
-            const fileName = urlFile.substring(urlFile.lastIndexOf('/') + 1);
-            const url = `https://4100.api.green-api.com$4100621940/sendFileByUrl/$3905565c604a459bb4c5c0e3cee4c6cab3f0ec34e4904c61b3`;
+            const { id, token } = getAuth();
+            const phone = document.getElementById('chatIdFile').value.trim();
+            const chatId = phone.includes('@t.me') ? phone : `${phone}@t.me`;
+            const urlFile = document.getElementById('fileUrl').value.trim();
+            const fileName = urlFile.substring(urlFile.lastIndexOf('/') + 1) || "file";
+            const url = `${baseUrl}/waInstance${id}/sendFileByUrl/${token}`;
 
             try {
                 const response = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: {
+                        'Content-Type': 'application/json' // ОБЯЗАТЕЛЬНО для передачи файлов по URL
+                    },
                     body: JSON.stringify({ chatId, urlFile, fileName })
                 });
-                const result = await response.json();
-                logResponse(result);
-            } catch (error) { logResponse({ error: error.message }); }
+                logResponse(await response.json());
+            } catch (e) { logResponse({ error: e.message }); }
         }
     </script>
 </body>
