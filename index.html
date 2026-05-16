@@ -55,42 +55,7 @@
         }
 
         // Вспомогательная функция для получения настроек доступа
-        function getCredentials() {
-            // .trim() уберет случайные пробелы в начале или конце
-            return {
-                id: document.getElementById('idInstance').value.trim(),
-                token: document.getElementById('apiTokenInstance').value.trim()
-            };
-        }
-
-        async function getSettings() {
-            const { id, token } = getCredentials();
-            // Проверь, чтобы ID и токен не были пустыми
-            if (!id || !token) {
-                logResponse({ error: "Введите idInstance и apiTokenInstance" });
-                return;
-            }
-            
-            const url = `https://4100.api.green-api.com$4100621940/getSettings/$3905565c604a459bb4c5c0e3cee4c6cab3f0ec34e4904c61b3`;
-            
-            try {
-                const response = await fetch(url, { method: 'GET' });
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`Ошибка сервера: ${response.status} - ${errorText}`);
-                }
-                const result = await response.json();
-                logResponse(result);
-            } catch (error) { 
-                logResponse({ 
-                    error: "Failed to fetch", 
-                    message: "Возможно, блокировка CORS или неверный ID/Token",
-                    details: error.message 
-                }); 
-            }
-        }
-
-        // 2. Метод getStateInstance [cite: 8]
+       // 2. Метод getStateInstance [cite: 8]
         async function getStateInstance() {
             const { id, token } = getCredentials();
             const url = `https://4100.api.green-api.com$4100621940/getStateInstance/$3905565c604a459bb4c5c0e3cee4c6cab3f0ec34e4904c61b3`;
