@@ -27,13 +27,13 @@
 
         <div class="group">
             <label>Отправка сообщения (Telegram)</label>
-            <input type="text" id="chatIdMessage" placeholder="77771234567 (без @t.me)">
-            <textarea id="textMessage" style="height: 60px; margin-top:5px;" placeholder="Hello World!"></textarea>
+            <input type="text" id="chatIdMessage" placeholder="77771234567">
+            <textarea id="textMessage" style="height: 60px; margin-top:5px;" placeholder="Текст сообщения"></textarea>
             <button onclick="sendMessage()">sendMessage</button>
         </div>
 
         <div class="group">
-            <label>Отправка файла по URL</label>
+            <label>Отправка файла по URL (Telegram)</label>
             <input type="text" id="chatIdFile" placeholder="77771234567">
             <input type="text" id="fileUrl" style="margin-top:5px;" placeholder="https://mysite.com/img.png">
             <button onclick="sendFileByUrl()">sendFileByUrl</button>
@@ -71,9 +71,10 @@
 
         async function sendMessage() {
             const { id, token } = getAuth();
-            const phone = document.getElementById('chatIdMessage').value.trim();
-            // Формируем chatId правильно: проверяем, нет ли уже @t.me
-            const chatId = phone.includes('@t.me') ? phone : `${phone}@t.me`;
+            const inputPhone = document.getElementById('chatIdMessage').value.trim();
+            
+            // Формируем корректный chatId для Telegram
+            const chatId = inputPhone.includes('@') ? inputPhone : `${inputPhone}@c.us`;
             const message = document.getElementById('textMessage').value;
             const url = `${baseUrl}/waInstance${id}/sendMessage/${token}`;
 
@@ -81,18 +82,23 @@
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json' // ОБЯЗАТЕЛЬНО для работы POST запросов
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ chatId, message })
+                    body: JSON.stringify({ 
+                        chatId: chatId, 
+                        message: message 
+                    })
                 });
-                logResponse(await response.json());
+                const result = await response.json();
+                logResponse(result);
             } catch (e) { logResponse({ error: e.message }); }
         }
 
         async function sendFileByUrl() {
             const { id, token } = getAuth();
-            const phone = document.getElementById('chatIdFile').value.trim();
-            const chatId = phone.includes('@t.me') ? phone : `${phone}@t.me`;
+            const inputPhone = document.getElementById('chatIdFile').value.trim();
+            
+            const chatId = inputPhone.includes('@') ? inputPhone : `${inputPhone}@c.us`;
             const urlFile = document.getElementById('fileUrl').value.trim();
             const fileName = urlFile.substring(urlFile.lastIndexOf('/') + 1) || "file";
             const url = `${baseUrl}/waInstance${id}/sendFileByUrl/${token}`;
@@ -101,11 +107,16 @@
                 const response = await fetch(url, {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json' // ОБЯЗАТЕЛЬНО для передачи файлов по URL
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ chatId, urlFile, fileName })
+                    body: JSON.stringify({ 
+                        chatId: chatId, 
+                        urlFile: urlFile, 
+                        fileName: fileName 
+                    })
                 });
-                logResponse(await response.json());
+                const result = await response.json();
+                logResponse(result);
             } catch (e) { logResponse({ error: e.message }); }
         }
     </script>
